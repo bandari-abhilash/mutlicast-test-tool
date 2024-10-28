@@ -102,5 +102,5 @@ func selectOptions(transmitterOptions string) {
 }
 
 func mutlicastSender() {
-
+	fmt.Println("Sending Mutlicast packets")
 }
