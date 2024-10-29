@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	// "net/http"
 )
@@ -18,9 +19,18 @@ type interfaces struct {
 
 var interfaceOption string
 var transmitterOptions string
+var portOption string
+var multicastAddress string
+var interfacesLists sync.Map
 
 func main() {
-	var interfacesLists sync.Map
+
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovering from panic : ", r)
+		}
+		main()
+	}()
 
 	interfaceOption = listInterfaces(&interfacesLists, interfaceOption)
 	value, ok := interfacesLists.Load(interfaceOption)
@@ -40,7 +50,7 @@ func main() {
 		}
 	}
 
-	selectOptions(transmitterOptions)
+	selectOptions(transmitterOptions, interfaceOption, portOption)
 
 }
 
@@ -81,7 +91,7 @@ func listInterfaces(interfacesLists *sync.Map, interfaceOption string) (intValue
 	return interfaceOption
 }
 
-func selectOptions(transmitterOptions string) {
+func selectOptions(transmitterOptions string, interfaceOption string, portOption string) {
 
 	fmt.Println("----Select from the following options-----")
 	fmt.Println("1. Multicast Sender(Will initiate multicast data)")
@@ -91,9 +101,17 @@ func selectOptions(transmitterOptions string) {
 	fmt.Scan(&transmitterOptions)
 	switch transmitterOptions {
 	case "1":
-		fmt.Println("You have selected option 1")
+		fmt.Println("Enter multicast address  between (224.0.0.0 to 239.255.255.255) to use")
+		fmt.Scan(&multicastAddress)
+		fmt.Println("Please enter the port number between 1 and 6445")
+		fmt.Scan(&portOption)
+		mutlicastSender(interfaceOption, portOption, multicastAddress)
 	case "2":
-		fmt.Println("You have selected option 2")
+		fmt.Println("Enter multicast address  between (224.0.0.0 to 239.255.255.255) to use")
+		fmt.Scan(&multicastAddress)
+		fmt.Println("Please enter the port number between 1 and 6445")
+		fmt.Scan(&portOption)
+		muliticastListener(interfaceOption, portOption, multicastAddress)
 	case "3":
 		os.Exit(0)
 	default:
@@ -101,6 +119,72 @@ func selectOptions(transmitterOptions string) {
 	}
 }
 
-func mutlicastSender() {
-	fmt.Println("Sending Mutlicast packets")
+func mutlicastSender(interfaceOption string, portOption string, multicastAddress string) {
+	testMessage := "This is a multicast test message"
+	interfaceDetails, ok := interfacesLists.Load(interfaceOption)
+	if !ok {
+		fmt.Println("Please enter the proper option")
+		os.Exit(0)
+	}
+	if interfaceDetailsTypeCasted, typeCasted := interfaceDetails.(interfaces); typeCasted {
+		port, convErr := strconv.Atoi(portOption)
+		if convErr != nil {
+			fmt.Println("Error while converting port from string to int")
+		}
+		fmt.Println("Printing IP-----------", net.IP(strings.TrimSpace(interfaceDetailsTypeCasted.interfaceIp)))
+		laddrObj := net.UDPAddr{
+			IP:   net.IP(interfaceDetailsTypeCasted.interfaceIp),
+			Port: port,
+		}
+		raddObj := net.UDPAddr{
+			IP:   net.IP(multicastAddress),
+			Port: port,
+		}
+		fmt.Println("------------------", net.IP.IsMulticast(net.IP(multicastAddress)))
+		udpConn, err := net.DialUDP("udp", &laddrObj, &raddObj)
+		if err != nil {
+			fmt.Println("Failed to create a udp connection", err.Error())
+		}
+
+		buf := []byte(testMessage)
+		for {
+			fmt.Printf("Sending packets on interface %s and port %d \n", interfaceDetailsTypeCasted.interfaceIp, port)
+			if _, err := udpConn.Write(buf); err != nil {
+				fmt.Println("Failed to send udp packets", err)
+			}
+		}
+	}
+
+}
+
+func muliticastListener(interfaceOption string, portOption string, multicastAddress string) {
+	interfaceDetails, ok := interfacesLists.Load(interfaceOption)
+	if !ok {
+		fmt.Println("Please enter the proper option")
+		os.Exit(0)
+	}
+	if _, typeCasted := interfaceDetails.(interfaces); typeCasted {
+		port, convErr := strconv.Atoi(portOption)
+		if convErr != nil {
+			fmt.Println("Error while converting port from string to int")
+		}
+		addrObj := net.UDPAddr{
+			IP:   net.IP(multicastAddress),
+			Port: port,
+		}
+
+		listener, err := net.ListenMulticastUDP("udp", nil, &addrObj)
+		if err != nil {
+			fmt.Println("Error while listening for multicast", err.Error())
+		}
+		buffer := make([]byte, 1024)
+		for {
+			n, _, errO := listener.ReadFromUDP(buffer)
+			if errO != nil {
+				fmt.Println("Unable to read the packets", errO.Error())
+			}
+			message := string(buffer[:n])
+			fmt.Println(message)
+		}
+	}
 }
