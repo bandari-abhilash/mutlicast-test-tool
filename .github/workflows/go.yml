@@ -59,3 +59,4 @@ jobs:
             multicast-tool-linux.tar.gz
             multicast-tool-macos.tar.gz
             multicast-tool.zip
+          updateOnlyUnreleased: true
