@@ -21,7 +21,7 @@ The Multicast Communication Tool is a Go application that allows users to send a
 
 ### Pre-built Binaries
 
-You can download the pre-built binaries for your operating system from the [Releases](https://github.com/yourusername/multicast-communication-tool/releases) page:
+You can download the pre-built binaries for your operating system from the [Releases](https://github.com/bandari-abhilash/mutlicast-test-tool/releases) page:
 
 - **Windows**: Download `multicast-tool-windows-amd64.zip`
 - **macOS**: Download `multicast-tool-darwin-amd64.tar.gz`
