@@ -52,7 +52,7 @@ jobs:
           fi
 
       - name: Upload Release Asset
-        uses: ncipollo/release-action@v1.10.0  # Use the latest version
+        uses: ncipollo/release-action@v1.14.0  # Use the latest version
         with:
           tag: ${{ github.ref }}  # Use the tag that triggered the workflow
           artifacts: |
