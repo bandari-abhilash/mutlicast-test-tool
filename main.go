@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 	// "net/http"
 )
 
@@ -131,27 +132,38 @@ func mutlicastSender(interfaceOption string, portOption string, multicastAddress
 		if convErr != nil {
 			fmt.Println("Error while converting port from string to int")
 		}
-		fmt.Println("Printing IP-----------", net.IP(strings.TrimSpace(interfaceDetailsTypeCasted.interfaceIp)))
+		interfaceIp := net.ParseIP(strings.TrimSpace(interfaceDetailsTypeCasted.interfaceIp))
 		laddrObj := net.UDPAddr{
-			IP:   net.IP(interfaceDetailsTypeCasted.interfaceIp),
+			IP:   interfaceIp,
 			Port: port,
 		}
-		raddObj := net.UDPAddr{
-			IP:   net.IP(multicastAddress),
-			Port: port,
+		fmt.Println("---------------------------", interfaceDetailsTypeCasted.interfaceName, net.HardwareAddr(interfaceDetailsTypeCasted.interfaceIp))
+		multicastIP := net.ParseIP(multicastAddress)
+		if multicastIP.To4() == nil || !multicastIP.IsMulticast() {
+			fmt.Println("Invalid multicast address")
+			selectOptions(transmitterOptions, interfaceOption, portOption)
 		}
-		fmt.Println("------------------", net.IP.IsMulticast(net.IP(multicastAddress)))
-		udpConn, err := net.DialUDP("udp", &laddrObj, &raddObj)
+		udpConn, err := net.DialUDP("udp", &laddrObj, &net.UDPAddr{IP: multicastIP, Port: port})
 		if err != nil {
 			fmt.Println("Failed to create a udp connection", err.Error())
+			return
+		}
+		errBuf := udpConn.SetWriteBuffer(15000000)
+		if errBuf != nil {
+			fmt.Println("Failed to set write buffer size", err)
+			os.Exit(0)
 		}
 
 		buf := []byte(testMessage)
+		messageCounter := 0
 		for {
-			fmt.Printf("Sending packets on interface %s and port %d \n", interfaceDetailsTypeCasted.interfaceIp, port)
+			fmt.Printf("Sending packets on interface %s and port %d \n", strings.TrimSpace(interfaceDetailsTypeCasted.interfaceIp), port)
+			messageCounter += 1
 			if _, err := udpConn.Write(buf); err != nil {
-				fmt.Println("Failed to send udp packets", err)
+				fmt.Printf("Failed to send udp packets and message count is %d and the error is %s", messageCounter, err.Error())
+				os.Exit(0)
 			}
+			time.Sleep(1000 * time.Millisecond)
 		}
 	}
 
@@ -163,17 +175,24 @@ func muliticastListener(interfaceOption string, portOption string, multicastAddr
 		fmt.Println("Please enter the proper option")
 		os.Exit(0)
 	}
-	if _, typeCasted := interfaceDetails.(interfaces); typeCasted {
+	if interfaceDetailsTypeCasted, typeCasted := interfaceDetails.(interfaces); typeCasted {
 		port, convErr := strconv.Atoi(portOption)
 		if convErr != nil {
 			fmt.Println("Error while converting port from string to int")
 		}
-		addrObj := net.UDPAddr{
-			IP:   net.IP(multicastAddress),
-			Port: port,
+		// interfaceIp := net.ParseIP(strings.TrimSpace(interfaceDetailsTypeCasted.interfaceIp))
+		addrObj := net.Interface{
+			Name:         interfaceDetailsTypeCasted.interfaceName,
+			HardwareAddr: net.HardwareAddr(interfaceDetailsTypeCasted.interfaceIp),
 		}
 
-		listener, err := net.ListenMulticastUDP("udp", nil, &addrObj)
+		multicastIP := net.ParseIP(multicastAddress)
+		if multicastIP.To4() == nil || !multicastIP.IsMulticast() {
+			fmt.Println("Invalid multicast address")
+			selectOptions(transmitterOptions, interfaceOption, portOption)
+		}
+		fmt.Println("---------------------------", interfaceDetailsTypeCasted.interfaceName, net.HardwareAddr(interfaceDetailsTypeCasted.interfaceIp))
+		listener, err := net.ListenMulticastUDP("udp", &addrObj, &net.UDPAddr{IP: multicastIP, Port: port})
 		if err != nil {
 			fmt.Println("Error while listening for multicast", err.Error())
 		}
