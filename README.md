@@ -14,10 +14,22 @@ The Multicast Communication Tool is a Go application that allows users to send a
 
 ## Requirements
 
-- Go 1.16 or later
 - A network interface that supports multicast
+- For building from source: Go 1.21 or later
 
 ## Installation
+
+### Pre-built Binaries
+
+You can download the pre-built binaries for your operating system from the [Releases](https://github.com/yourusername/multicast-communication-tool/releases) page:
+
+- **Windows**: Download `multicast-tool-windows-amd64.zip`
+- **macOS**: Download `multicast-tool-darwin-amd64.tar.gz`
+- **Linux**: Download `multicast-tool-linux-amd64.tar.gz`
+
+After downloading, extract the archive and run the executable.
+
+### Building from Source
 
 1. Clone the repository:
    ```bash
@@ -32,7 +44,11 @@ The Multicast Communication Tool is a Go application that allows users to send a
 
 3. Run the application:
    ```bash
+   # On Linux/macOS
    ./multicast-tool
+
+   # On Windows
+   multicast-tool.exe
    ```
 
 ## Usage
@@ -52,6 +68,21 @@ The Multicast Communication Tool is a Go application that allows users to send a
 
 5. **Receiving Messages**: If you select the receiver option, the application will listen for incoming multicast messages and print them to the console.
 
+## Example Output
+
+```
+Select any of the following interfaces--------------- 
+
+1   192.168.1.10                               eth0
+2   192.168.1.11                               wlan0
+3   EXIT
+
+Please select an option: 1
+----Select from the following options-----
+1. Multicast Sender(Will initiate multicast data)
+2. Multicast Receiver(Will receive Multicast Data)
+3. Exit
+```
 
 ## Error Handling
 
@@ -60,6 +91,21 @@ The application includes basic error handling for common issues, such as invalid
 ## Contributing
 
 Contributions are welcome! If you have suggestions for improvements or new features, please open an issue or submit a pull request.
+
+## Building from Source for Different Platforms
+
+To build the application for different platforms, you can use the following commands:
+
+```bash
+# For Windows
+GOOS=windows GOARCH=amd64 go build -o multicast-tool.exe main.go
+
+# For macOS
+GOOS=darwin GOARCH=amd64 go build -o multicast-tool main.go
+
+# For Linux
+GOOS=linux GOARCH=amd64 go build -o multicast-tool main.go
+```
 
 ## License
 
