@@ -1,0 +1,36 @@
+name: Go Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Triggers on version tags (e.g., v1.0.0)
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.16'  # Specify the Go version
+
+      - name: Build
+        run: |
+          GOOS=${{ matrix.os == 'windows-latest' && 'windows' || matrix.os == 'macos-latest' && 'darwin' || 'linux' }}
+          GOARCH=amd64 go build -o multicast-tool-${{ matrix.os }} main.go
+
+      - name: Archive binaries
+        run: |
+          tar -czvf multicast-tool-${{ matrix.os }}.tar.gz multicast-tool-${{ matrix.os }}
+
+      - name: Upload Release Asset
+        uses: ncipollo/release-action@v1
+        with:
+          files: multicast-tool-${{ matrix.os }}.tar.gz
