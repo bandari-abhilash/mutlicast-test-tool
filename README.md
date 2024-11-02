@@ -29,6 +29,23 @@ You can download the pre-built binaries for your operating system from the [Rele
 
 After downloading, extract the archive and run the executable.
 
+#### Note for macOS Users
+When running the application on macOS, you might encounter security warnings because the binary isn't signed with an Apple developer certificate. To run the application:
+
+1. After downloading and extracting the `.tar.gz` file, try to run the application.
+2. If you see a security warning saying the app "cannot be opened because it is from an unidentified developer":
+   - Right-click (or Control-click) on the application
+   - Select "Open" from the context menu
+   - Click "Open" in the security dialog that appears
+   - The application will now run, and macOS will remember your choice for future launches
+
+Alternatively, you can:
+1. Go to System Preferences > Security & Privacy > General
+2. Look for the message about the blocked application
+3. Click "Open Anyway" to allow the application to run
+
+These steps are only needed the first time you run the application.
+
 ### Building from Source
 
 1. Clone the repository:
