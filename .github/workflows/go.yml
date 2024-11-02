@@ -3,60 +3,55 @@ name: Go Build and Release
 on:
   push:
     tags:
-      - 'v*'  # Triggers on version tags (e.g., v1.0.0)
+      - 'v*'
 
 permissions:
   contents: write
-  packages: write
-  deployments: write
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
+  releases-matrix:
+    name: Release Binary
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        goos: [linux, windows, darwin]
+        goarch: [amd64]
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
+      - uses: actions/checkout@v3
+      
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
         with:
           go-version: '1.23'
-
+          
       - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
         run: |
-          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            GOOS=windows
-            GOARCH=amd64
-            OUTPUT="multicast-tool.exe"
-          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            GOOS=darwin
-            GOARCH=amd64
-            OUTPUT="multicast-tool"
+          binary_name=""
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            binary_name="multicast-tool.exe"
           else
-            GOOS=linux
-            GOARCH=amd64
-            OUTPUT="multicast-tool"
+            binary_name="multicast-tool"
           fi
-          env GOOS=$GOOS GOARCH=$GOARCH go build -o $OUTPUT main.go
-
-      - name: Archive binaries
+          go build -o $binary_name main.go
+          
+      - name: Archive Release
         run: |
-          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            zip multicast-tool.zip multicast-tool.exe
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            zip "multicast-tool-${{ matrix.goos }}-${{ matrix.goarch }}.zip" multicast-tool.exe
           else
-            tar -czvf multicast-tool-${{ matrix.os }}.tar.gz multicast-tool
+            tar czvf "multicast-tool-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz" multicast-tool
           fi
-
-      - name: Upload Release Asset
-        uses: ncipollo/release-action@v1.14.0  # Use the latest version
+          
+      - name: Upload Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
         with:
-          tag: ${{ github.ref }}  # Use the tag that triggered the workflow
-          artifacts: |
-            multicast-tool-linux.tar.gz
-            multicast-tool-macos.tar.gz
-            multicast-tool.zip
-          updateOnlyUnreleased: true
+          files: |
+            multicast-tool-${{ matrix.goos }}-${{ matrix.goarch }}.zip
+            multicast-tool-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
