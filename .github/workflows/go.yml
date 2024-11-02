@@ -5,6 +5,11 @@ on:
     tags:
       - 'v*'  # Triggers on version tags (e.g., v1.0.0)
 
+permissions:
+  contents: read
+  packages: write
+  deployments: write
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -23,14 +28,34 @@ jobs:
 
       - name: Build
         run: |
-          GOOS=${{ matrix.os == 'windows-latest' && 'windows' || matrix.os == 'macos-latest' && 'darwin' || 'linux' }}
-          GOARCH=amd64 go build -o multicast-tool-${{ matrix.os }} main.go
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            GOOS=windows
+            GOARCH=amd64
+            OUTPUT="multicast-tool.exe"
+          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            GOOS=darwin
+            GOARCH=amd64
+            OUTPUT="multicast-tool"
+          else
+            GOOS=linux
+            GOARCH=amd64
+            OUTPUT="multicast-tool"
+          fi
+          env GOOS=$GOOS GOARCH=$GOARCH go build -o $OUTPUT main.go
 
       - name: Archive binaries
         run: |
-          tar -czvf multicast-tool-${{ matrix.os }}.tar.gz multicast-tool-${{ matrix.os }}
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            zip multicast-tool.zip multicast-tool.exe
+          else
+            tar -czvf multicast-tool-${{ matrix.os }}.tar.gz multicast-tool
+          fi
 
       - name: Upload Release Asset
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@v1.10.0  # Use the latest version
         with:
-          files: multicast-tool-${{ matrix.os }}.tar.gz
+          tag: ${{ github.ref }}  # Use the tag that triggered the workflow
+          artifacts: |
+            multicast-tool-linux.tar.gz
+            multicast-tool-macos.tar.gz
+            multicast-tool.zip
