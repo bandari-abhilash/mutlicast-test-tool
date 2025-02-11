@@ -1,0 +1,14 @@
+{
+  "name": "scores-api-backend",
+  "module": "index.js",
+  "type": "module",
+  "scripts": {
+    "start" : "bun run --env-file=./.env index.js"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
