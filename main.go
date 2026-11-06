@@ -180,10 +180,12 @@ func muliticastListener(interfaceOption string, portOption string, multicastAddr
 		if convErr != nil {
 			fmt.Println("Error while converting port from string to int")
 		}
-		// interfaceIp := net.ParseIP(strings.TrimSpace(interfaceDetailsTypeCasted.interfaceIp))
-		addrObj := net.Interface{
-			Name:         interfaceDetailsTypeCasted.interfaceName,
-			HardwareAddr: net.HardwareAddr(interfaceDetailsTypeCasted.interfaceIp),
+		// Look up the real interface so the IGMP join uses its index/address;
+		// a hand-built net.Interface has Index 0 and the kernel falls back to the default route interface
+		addrObj, ifaceErr := net.InterfaceByName(interfaceDetailsTypeCasted.interfaceName)
+		if ifaceErr != nil {
+			fmt.Println("Unable to find interface", interfaceDetailsTypeCasted.interfaceName, ifaceErr.Error())
+			return
 		}
 
 		multicastIP := net.ParseIP(multicastAddress)
@@ -192,9 +194,10 @@ func muliticastListener(interfaceOption string, portOption string, multicastAddr
 			selectOptions(transmitterOptions, interfaceOption, portOption)
 		}
 		fmt.Println("---------------------------", interfaceDetailsTypeCasted.interfaceName, net.HardwareAddr(interfaceDetailsTypeCasted.interfaceIp))
-		listener, err := net.ListenMulticastUDP("udp", &addrObj, &net.UDPAddr{IP: multicastIP, Port: port})
+		listener, err := net.ListenMulticastUDP("udp", addrObj, &net.UDPAddr{IP: multicastIP, Port: port})
 		if err != nil {
 			fmt.Println("Error while listening for multicast", err.Error())
+			return
 		}
 		buffer := make([]byte, 1024)
 		for {
